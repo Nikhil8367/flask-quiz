@@ -63,6 +63,10 @@ def ensure_admin_exists():
 # Ensure admin user is in the database
 ensure_admin_exists()
 
+@app.route("/")
+def home():
+    return "Flask app is running successfully!"
+
 # 🔹 SIGNUP Route
 @app.route('/signup', methods=['POST'])
 def signup():
