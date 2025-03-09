@@ -1,0 +1,12 @@
+flask
+flask-pymongo
+pymongo
+google-generativeai
+dnspython
+gunicorn
+python-dotenv
+flask
+flask-cors
+pymongo
+python-dotenv
+requests
