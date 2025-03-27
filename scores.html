@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Scores</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px 40px;
+            border-radius: 15px;
+            display: inline-block;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #scores-container {
+            width: 80%;
+            max-width: 600px;
+            margin: auto;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <h2>Student Quiz Scores</h2>
+    <div id="scores-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Roll No</th>  <!-- ✅ Added Roll No Column -->
+                    <th>Student Name</th>
+                    <th>Score</th>
+                    <th>Total Questions</th>
+                </tr>
+            </thead>
+            <tbody id="scores-list">
+                <!-- Scores will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function fetchScores() {
+            console.log("Fetching scores..."); // Debugging log
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/get-scores');
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                let scoresHTML = "";
+
+                // Check if the scores array exists
+                if (data.scores && Array.isArray(data.scores)) {
+                    data.scores.forEach(score => {
+                        scoresHTML += `
+                            <tr>
+                                <td>${score.roll_no || 'N/A'}</td>  <!-- ✅ Displays Roll No -->
+                                <td>${score.student_name}</td>
+                                <td>${score.score}</td>
+                                <td>${score.total_questions}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    console.error('No valid scores data found.');
+                }
+
+                document.getElementById('scores-list').innerHTML = scoresHTML;
+
+            } catch (error) {
+                console.error("Error fetching scores:", error);
+            }
+        }
+
+        // Call fetchScores() when the page loads
+        window.onload = function() {
+            fetchScores();
+        };
+    </script>
+</body>
+</html>

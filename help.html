@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Generated Quiz</title>
+    <style>
+/* Google Font - Poppins */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+/* 🌍 Global Styles */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #fff;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* 🏆 Header */
+h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px 40px;
+    border-radius: 15px;
+    display: inline-block;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 📌 Form Container */
+#form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* 📌 Form Inputs */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.form-group label {
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
+
+select, input {
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 10px;
+    border: none;
+    width: 200px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+select:focus, input:focus {
+    outline: none;
+    transform: scale(1.05);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+/* 🎯 Buttons */
+button {
+    padding: 14px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    background: linear-gradient(45deg, #ff416c, #ff4b2b);
+    border: none;
+    border-radius: 30px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    margin-top: 20px;
+}
+
+button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 15px rgba(255, 75, 43, 0.5);
+}
+
+button:active {
+    transform: scale(1);
+    box-shadow: none;
+}
+
+/* 📌 Quiz Container */
+#quiz-container {
+    display: none; /* Hidden until View is clicked */
+    margin-top: 30px;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    width: 80%;
+    max-width: 1000px;
+    text-align: left;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* 📝 Question Card */
+.question-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s;
+}
+
+.question-card:hover {
+    transform: scale(1.02);
+}
+
+/* 📌 Question Title */
+.question-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* 📝 Input Styling */
+.edit-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: none;
+    background: rgba(255, 255, 255, 0.9);
+    color: #000;
+    transition: all 0.3s ease;
+}
+
+.edit-input:focus {
+    outline: none;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* ✅ Answer Section */
+.answer-section {
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* 🎯 Options Container */
+.options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+/* 🔘 Option Input */
+.option-input {
+    font-size: 14px;
+}
+
+/* 📌 Button Group */
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+}
+
+/* 🎯 Action Buttons */
+.save-btn, .nav-btn, .submit-btn {
+    padding: 10px 15px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.2s;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.save-btn {
+    background: #28a745;
+    color: white;
+}
+
+.nav-btn {
+    background: #007bff;
+    color: white;
+}
+
+.submit-btn {
+    background: #ff5722;
+    color: white;
+}
+
+.save-btn:hover {
+    background: #218838;
+}
+
+.nav-btn:hover {
+    background: #0056b3;
+}
+
+.submit-btn:hover {
+    background: #e64a19;
+}
+
+/* 📌 Completion Message */
+.completion-message {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    color: #28a745;
+}
+
+/* 🔳 Message Box */
+#message {
+    margin-top: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+/* 🔘 Button Container */
+#button-container {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.add-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.add-btn:hover {
+    background-color: #218838;
+}
+
+/* ✅ Align input box and file upload side by side */
+.input-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Style for the custom file upload button */
+.custom-file-upload {
+    display: inline-block;
+    padding: 6px 10px;
+    background-color: #007bff;
+    color: white;
+    font-size: 13px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.3s ease;
+}
+
+.custom-file-upload:hover {
+    background-color: #0056b3;
+}
+
+/* Hide default file input */
+.hidden-file-input {
+    display: none;
+}
+
+/* Style for uploaded image previews */
+.preview-img {
+    max-width: 80px;
+    max-height: 80px;
+    margin-left: 10px;
+    border-radius: 5px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+/* 🎯 Responsive Adjustments */
+@media (max-width: 768px) {
+    h2 {
+        font-size: 2rem;
+        padding: 10px 30px;
+    }
+
+    #form-container {
+        flex-direction: column;
+        padding: 15px;
+    }
+
+    select, input {
+        width: 100%;
+    }
+
+    #quiz-container {
+        width: 95%;
+    }
+}
+
+    </style>
+</head>
+<body>
+    <h2>AI-Generated Quiz</h2>
+    <button class="view-scores-btn" onclick="viewAllScores()">📊 View Student Scores</button>
+    <div id="scores-container"></div>
+    <br>
+    <div id="form-container">
+        <div class="form-group">
+            <label for="topic">Select Topic:</label>
+            <select id="topic">
+                <option value="c">C Language</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="javascript">JavaScript</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="difficulty">Select Difficulty:</label>
+            <select id="difficulty">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+                <option value="impossible">Impossible</option>
+                <option value="any">Any</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="num-questions">Number of Questions:</label>
+            <input type="number" id="num-questions" min="1" max="20" value="5">
+        </div>
+
+        <button onclick="generateQuiz()">Generate Quiz</button>
+    </div>
+
+    <p id="message"></p>
+
+    <div id="button-container">
+        <button onclick="toggleQuizView()">View Questions & Answers</button>
+        <button onclick="resetQuiz()">Reset Quiz</button>
+    </div>
+
+    <div id="quiz-container"></div>
+
+    <script>
+const API_BASE_URL = "http://127.0.0.1:5000"; // Flask backend URL
+let quizData = [];
+let currentQuestionIndex = 0;
+let tempEdits = {}; // Store temporary edits
+
+// Generate quiz questions
+async function generateQuiz() {
+    const topic = document.getElementById('topic').value;
+    const difficulty = document.getElementById('difficulty').value;
+    const numQuestions = document.getElementById('num-questions').value;
+    const messageElement = document.getElementById('message');
+
+    messageElement.textContent = "Generating questions... Please wait.";
+    
+    // Clear temporary edits
+    tempEdits = {}; 
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/generate-quiz`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic, difficulty, num_questions: parseInt(numQuestions) })
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+        const data = await response.json();
+        if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+            messageElement.textContent = "No questions received. Try again.";
+            return;
+        }
+
+        quizData = data.questions;
+        await storeQuestionsInDB(quizData);
+        messageElement.textContent = "Questions generated successfully! Click 'View Questions' to see them.";
+    } catch (error) {
+        console.error("Error fetching quiz:", error);
+        messageElement.textContent = "Failed to load questions. Please try again.";
+    }
+}
+
+// Store questions in the database
+async function storeQuestionsInDB(questions) {
+    try {
+        await fetch(`${API_BASE_URL}/store-questions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ questions })
+        });
+        console.log("Questions stored successfully.");
+    } catch (error) {
+        console.error("Error storing questions:", error);
+    }
+}
+
+// Retrieve questions from DB
+async function fetchQuestionsFromDB() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/get-questions`);
+        if (!response.ok) throw new Error("Failed to fetch questions from DB.");
+        const data = await response.json();
+        return data.questions || [];
+    } catch (error) {
+        console.error("Error fetching questions:", error);
+        return [];
+    }
+}
+
+// Show quiz UI
+async function displayQuiz() {
+    quizData = await fetchQuestionsFromDB();
+    tempEdits = {}; // Clear temporary edits when viewing questions
+
+    if (!quizData.length) {
+        document.getElementById('quiz-container').innerHTML = "<p>No questions available. Generate questions first.</p>";
+        return;
+    }
+    currentQuestionIndex = 0;
+    showQuestion(currentQuestionIndex);
+}
+
+// Toggle quiz view
+async function toggleQuizView() {
+    const quizContainer = document.getElementById('quiz-container');
+    if (quizContainer.style.display === "none" || quizContainer.style.display === "") {
+        await displayQuiz();
+        quizContainer.style.display = "block";
+    } else {
+        quizContainer.style.display = "none";
+    }
+}
+
+function showQuestion(index) {
+    const quizContainer = document.getElementById('quiz-container');
+    quizContainer.innerHTML = "";
+
+    // Button to add a new question
+    const addButton = document.createElement("button");
+    addButton.textContent = "➕ Add New Question";
+    addButton.classList.add("add-btn");
+    addButton.onclick = addEmptyQuestion;
+    quizContainer.appendChild(addButton);
+
+    if (index >= quizData.length) {
+        quizContainer.innerHTML += `
+            <div class="question-card">
+                <p class="completion-message">✅ No more questions. Submit your changes.</p>
+                <button class="submit-btn" onclick="submitUpdatedQuestions()">Submit All Changes</button>
+            </div>
+        `;
+        return;
+    }
+
+    const question = tempEdits[index] || quizData[index];
+
+    const questionDiv = document.createElement('div');
+    questionDiv.classList.add('question-card');
+
+    questionDiv.innerHTML = `
+        <p class="question-title"><strong>Q${index + 1}:</strong></p>
+        <div class="input-container">
+            <input class="edit-input question-input" type="text" value="${question.question}" id="question-${index}">
+            
+            <!-- Custom file input for question image -->
+            <label class="custom-file-upload">
+                📷 Upload Image
+                <input type="file" class="hidden-file-input" accept="image/*" id="question-img-${index}" 
+                onchange="uploadImage(event, 'question-${index}')">
+            </label>
+        </div>
+        ${question.image ? `<img src="${question.image}" class="preview-img">` : ""}
+
+        <div class="options-container">
+            ${question.options.map((option, i) => `
+                <div class="option">
+                    <div class="input-container">
+                        <input class="edit-input option-input" type="text" value="${option}" id="option-${index}-${i}">
+                        
+                        <!-- Custom file input for option image -->
+                        <label class="custom-file-upload">
+                            📷 Upload Image
+                            <input type="file" class="hidden-file-input" accept="image/*" id="option-img-${index}-${i}" 
+                            onchange="uploadImage(event, 'option-${index}-${i}')">
+                        </label>
+                    </div>
+                    ${question.option_images && question.option_images[i] ? `<img src="${question.option_images[i]}" class="preview-img">` : ""}
+                </div>
+            `).join('')}
+        </div>
+
+        <p class="answer-section">
+            <strong>Answer:</strong> 
+            <div class="input-container">
+                <input class="edit-input answer-input" type="text" value="${question.correct_answer}" id="answer-${index}">
+                
+                <!-- Custom file input for answer image -->
+                <label class="custom-file-upload">
+                    📷 Upload Image
+                    <input type="file" class="hidden-file-input" accept="image/*" id="answer-img-${index}" 
+                    onchange="uploadImage(event, 'answer-${index}')">
+                </label>
+            </div>
+        </p>
+        ${question.answer_image ? `<img src="${question.answer_image}" class="preview-img">` : ""}
+
+        <div class="button-group">
+            <button class="save-btn" onclick="saveEdit(${index})">💾 Save Edit</button>
+            ${index > 0 ? `<button class="nav-btn" onclick="previousQuestion()">⬅️ Previous</button>` : ""}
+            ${index < quizData.length - 1 
+                ? `<button class="nav-btn" onclick="nextQuestion()">Next ➡️</button>` 
+                : `<button class="submit-btn" onclick="submitUpdatedQuestions()">🚀 Submit All Changes</button>`}
+            <button class="remove-btn" onclick="removeQuestion(${index})">🗑 Remove Question</button>
+        </div>
+    `;
+
+    quizContainer.appendChild(questionDiv);
+}
+
+function removeQuestion(index) {
+    if (confirm("Are you sure you want to remove this question?")) {
+        quizData.splice(index, 1);
+        showQuestion(Math.max(0, index - 1)); // Show the previous question if possible
+    }
+}
+
+// Function to add a new empty question template
+function addEmptyQuestion() {
+    const newQuestion = {
+        question: "",
+        options: ["", "", "", ""], // Default 4 empty options
+        correct_answer: "",
+        image: "",
+        option_images: ["", "", "", ""],
+        answer_image: ""
+    };
+    quizData.push(newQuestion);
+    currentQuestionIndex = quizData.length - 1;
+    showQuestion(currentQuestionIndex);
+}
+
+
+function uploadImage(event, fieldId) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const base64Image = e.target.result;
+        
+        // Check if the field is a question, option, or answer
+        if (fieldId.startsWith("option-")) {
+            const [_, questionIndex, optionIndex] = fieldId.split("-");
+            if (!tempEdits[questionIndex]) {
+                tempEdits[questionIndex] = { ...quizData[questionIndex] };
+            }
+            if (!tempEdits[questionIndex].option_images) {
+                tempEdits[questionIndex].option_images = [];
+            }
+            tempEdits[questionIndex].option_images[optionIndex] = base64Image;
+        } else if (fieldId.startsWith("question-")) {
+            const questionIndex = fieldId.split("-")[1];
+            if (!tempEdits[questionIndex]) {
+                tempEdits[questionIndex] = { ...quizData[questionIndex] };
+            }
+            tempEdits[questionIndex].image = base64Image;
+        } else if (fieldId.startsWith("answer-")) {
+            const questionIndex = fieldId.split("-")[1];
+            if (!tempEdits[questionIndex]) {
+                tempEdits[questionIndex] = { ...quizData[questionIndex] };
+            }
+            tempEdits[questionIndex].answer_image = base64Image;
+        }
+        
+        // Display the image preview
+        const previewImg = document.createElement("img");
+        previewImg.src = base64Image;
+        previewImg.classList.add("preview-img");
+
+        const parentLabel = event.target.closest("label");
+        parentLabel.insertAdjacentElement("afterend", previewImg);
+    };
+    reader.readAsDataURL(file);
+}
+
+function saveEdit(index) {
+    const questionValue = document.getElementById(`question-${index}`).value;
+    const answerValue = document.getElementById(`answer-${index}`).value;
+    const options = quizData[index].options.map((_, i) =>
+        document.getElementById(`option-${index}-${i}`).value
+    );
+
+    // Ensure tempEdits exists for this question
+    if (!tempEdits[index]) {
+        tempEdits[index] = { ...quizData[index] };
+    }
+
+    // Update text values
+    tempEdits[index].question = questionValue;
+    tempEdits[index].correct_answer = answerValue;
+    tempEdits[index].options = options;
+
+    // Capture images
+    const questionImageInput = document.getElementById(`question-img-${index}`);
+    const answerImageInput = document.getElementById(`answer-img-${index}`);
+
+    if (questionImageInput && questionImageInput.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            tempEdits[index].image = e.target.result; // Store Base64 image
+        };
+        reader.readAsDataURL(questionImageInput.files[0]);
+    }
+
+    if (answerImageInput && answerImageInput.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            tempEdits[index].answer_image = e.target.result;
+        };
+        reader.readAsDataURL(answerImageInput.files[0]);
+    }
+
+    // Capture option images
+    tempEdits[index].option_images = [];
+    for (let i = 0; i < options.length; i++) {
+        const optionImageInput = document.getElementById(`option-img-${index}-${i}`);
+        if (optionImageInput && optionImageInput.files.length > 0) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                tempEdits[index].option_images[i] = e.target.result;
+            };
+            reader.readAsDataURL(optionImageInput.files[0]);
+        } else {
+            tempEdits[index].option_images[i] = quizData[index].option_images[i] || ""; // Keep old image if not updated
+        }
+    }
+
+    console.log("✅ Saved Edit for Q" + (index + 1), tempEdits[index]);
+    alert("Changes saved temporarily!");
+}
+
+// Move to the next question
+function nextQuestion() {
+    if (currentQuestionIndex < quizData.length - 1) {
+        currentQuestionIndex++;
+        showQuestion(currentQuestionIndex);
+    }
+}
+
+// Move to the previous question
+function previousQuestion() {
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        showQuestion(currentQuestionIndex);
+    }
+}
+
+// Submit updated questions
+async function submitUpdatedQuestions() {
+    try {
+        // Merge temporary edits into main quiz data
+        for (let index in tempEdits) {
+            quizData[parseInt(index)] = tempEdits[index];
+        }
+
+        let response = await fetch(`${API_BASE_URL}/submit-all-changes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ questions: quizData }) // Ensure images are included
+        });
+
+        let result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Unknown error");
+
+        alert("✅ All changes saved successfully!");
+        tempEdits = {}; // Clear temp edits after saving
+
+    } catch (error) {
+        console.error("❌ Error updating questions:", error);
+        alert("⚠️ Failed to update questions. Please try again.");
+    }
+}
+
+// Reset the quiz
+async function resetQuiz() {
+    try {
+        await fetch(`${API_BASE_URL}/reset-quiz`, { method: "POST" });
+        tempEdits = {};
+        quizData = [];
+        document.getElementById("quiz-container").innerHTML = "";
+        alert("Quiz has been reset!");
+    } catch (error) {
+        console.error("Error resetting quiz:", error);
+    }
+}
+
+// 🔹 Fetch and View All Scores
+async function viewAllScores() {
+    window.location.href = "scores.html";
+}
+
+    </script>
+</body>
+</html>

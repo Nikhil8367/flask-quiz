@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Quiz</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #fff;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px 40px;
+    border-radius: 15px;
+    display: inline-block;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Entry Form */
+#name-entry {
+    margin-top: 30px;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.input-group {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 15px;
+}
+
+#student-name, #roll-no {
+    padding: 10px;
+    font-size: 1rem;
+    width: 48%;
+    border-radius: 10px;
+    border: 2px solid #fff;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    text-align: center;
+}
+
+/* Buttons */
+button {
+    padding: 12px 25px;
+    font-size: 1rem;
+    font-weight: bold;
+    background: linear-gradient(45deg, #ff416c, #ff4b2b);
+    border: none;
+    border-radius: 30px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    margin-top: 20px;
+}
+
+button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(255, 75, 43, 0.5);
+}
+
+/* Quiz Container */
+#quiz-container {
+    display: none;
+    margin-top: 30px;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 600px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Question */
+#question-box {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.question-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Question Image */
+.question-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease-in-out;
+}
+
+.question-image:hover {
+    transform: scale(1.05);
+}
+
+/* Options */
+.options-container {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.option-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 25px;
+    background: linear-gradient(45deg, #1e3c72, #2a5298);
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+/* Option Text & Image Alignment */
+.option-btn .option-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Ensure option images display properly */
+.option-btn img {
+    max-width: 70px;
+    height: auto;
+    border-radius: 5px;
+}
+
+.option-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(42, 82, 152, 0.5);
+}
+
+.option-btn.selected {
+    background: linear-gradient(45deg, #ff416c, #ff4b2b);
+    box-shadow: 0 6px 15px rgba(255, 75, 43, 0.5);
+}
+
+/* Next Button */
+#next-btn {
+    display: block;
+    padding: 12px 25px;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+    width: 60%;
+    max-width: 200px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Enabled State */
+#next-btn:not(:disabled) {
+    background: linear-gradient(45deg, #ff416c, #ff4b2b);
+    color: white;
+}
+
+#next-btn:not(:disabled):hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 15px rgba(255, 75, 43, 0.5);
+}
+
+/* Disabled State */
+#next-btn:disabled {
+    background: rgba(200, 200, 200, 0.5);
+    color: #bbb;
+    cursor: not-allowed;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    opacity: 0.6;
+}
+
+/* Start Quiz Button */
+#start-quiz {
+    padding: 12px 25px;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Disabled Start Button */
+#start-quiz:disabled {
+    background: rgba(200, 200, 200, 0.5);
+    color: #bbb;
+    cursor: not-allowed;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    filter: blur(1px);
+    opacity: 0.6;
+}
+
+
+    </style>
+</head>
+<body>
+    <h2>Student Quiz Portal</h2>
+
+    <div id="name-entry">
+        <h3>Your Details</h3>
+        <div class="input-group">
+            <input type="text" id="student-name" disabled>
+            <input type="text" id="roll-no" disabled>
+        </div>
+        <button id="start-quiz" onclick="startQuiz()" disabled></button>
+<p id="quizMessage" style="margin-top: 10px; font-weight: bold;"></p>
+
+    </div>
+
+    <div id="quiz-container">
+        <div id="question-box">
+            <p id="question"></p>
+            <div id="options"></div>
+            <button id="next-btn" onclick="nextQuestion()">Next</button>
+        </div>
+    </div>
+
+    <script>
+let questions = [];
+let currentQuestionIndex = 0;
+let score = 0;
+let studentName = "";
+let rollNo = "";
+let selectedOption = null;
+
+window.onload = async function () {
+    studentName = localStorage.getItem("student_name");
+    rollNo = localStorage.getItem("roll_no");
+
+    if (!studentName || !rollNo) {
+        alert("⚠️ User not logged in. Redirecting to login...");
+        window.location.href = "login.html";
+        return;
+    }
+
+    document.getElementById("student-name").value = studentName;
+    document.getElementById("roll-no").value = rollNo;
+
+    try {
+        const response = await fetch('http://localhost:5000/get-user-info');
+        const data = await response.json();
+
+        if (!data.error) {
+            studentName = data.student_name;
+            rollNo = data.roll_no;
+            localStorage.setItem("student_name", studentName);
+            localStorage.setItem("roll_no", rollNo);
+            document.getElementById("student-name").value = studentName;
+            document.getElementById("roll-no").value = rollNo;
+        }
+    } catch (error) {
+        console.warn("Could not verify session with backend. Using local storage.");
+    }
+};
+
+async function fetchQuestions() {
+    try {
+        questions = [];
+        currentQuestionIndex = 0;
+
+        const response = await fetch('http://localhost:5000/get-questions');
+        const data = await response.json();
+
+        if (!data.questions || data.questions.length === 0) {
+            document.getElementById('quiz-container').innerHTML = `<p>⚠️ No questions available.</p>`;
+            return;
+        }
+
+        questions = data.questions;
+        showQuestion();
+    } catch (error) {
+        console.error("🔥 Error fetching questions:", error);
+    }
+}
+
+function showQuestion() {
+    if (currentQuestionIndex >= questions.length) {
+        endQuiz();
+        return;
+    }
+
+    selectedOption = null;
+    const questionData = questions[currentQuestionIndex];
+
+    let questionHTML = `<p class="question-text">Q${currentQuestionIndex + 1}: ${questionData.question}</p>`;
+
+    // ✅ Show Image if available
+    if (questionData.image) {
+        questionHTML += `<img src="${questionData.image}" class="question-image" onerror="this.style.display='none';">`;
+    }
+
+    let optionsHTML = '';
+
+    try {
+        let optionsArray = questionData.options;
+        let optionImages = questionData.option_images || [];
+
+        // ✅ Ensure options are parsed correctly
+        if (typeof optionsArray === "string") {
+            try {
+                optionsArray = JSON.parse(optionsArray.replace(/'/g, '"'));
+            } catch (err) {
+                optionsArray = [optionsArray]; // Treat as single option
+            }
+        }
+
+        if (!Array.isArray(optionsArray) || optionsArray.length === 0) {
+            optionsHTML = "<p class='error'>⚠️ No options available for this question.</p>";
+        } else {
+            optionsArray.forEach((option, index) => {
+                let optionText = typeof option === "string" ? option.trim() : JSON.stringify(option).trim();
+                let optionImage = optionImages[index] ? `<img src="${optionImages[index]}" class="option-image" onerror="this.style.display='none';">` : "";
+
+                // ✅ Hide options that have no text and no image
+                if (optionText === "" && !optionImages[index]) return;
+
+                optionsHTML += `
+                    <button class="option-btn" onclick="selectOption(this, '${optionText.replace(/'/g, "&apos;")}')">
+                        ${optionImage}
+                        ${optionText}
+                    </button>
+                `;
+            });
+        }
+    } catch (error) {
+        console.error("🚨 Error processing options:", error);
+        optionsHTML = "<p class='error'>⚠️ No options available for this question.</p>";
+    }
+
+    document.getElementById('question').innerHTML = questionHTML;
+    document.getElementById('options').innerHTML = optionsHTML;
+
+    // ✅ Hide next button initially
+    let nextBtn = document.getElementById('next-btn');
+    if (nextBtn) {
+        nextBtn.style.display = "none"; 
+        nextBtn.disabled = true;
+    }
+}
+
+
+function selectOption(button, chosenOption) {
+    document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+    button.classList.add('selected');
+    
+    // ✅ Allow selection of empty options
+    selectedOption = chosenOption.trim() === "" ? " " : chosenOption; 
+
+    const nextBtn = document.getElementById('next-btn');
+    if (nextBtn) {
+        nextBtn.style.display = "block";
+        nextBtn.disabled = false;
+    }
+}
+
+function nextQuestion() {
+    if (selectedOption === null) {
+        alert("⚠️ Please select an option before proceeding.");
+        return;
+    }
+
+    let correctAnswer = questions[currentQuestionIndex].correct_answer.trim();
+
+    // ✅ Handle cases where the correct answer is blank
+    if (correctAnswer === "") {
+        correctAnswer = " ";  // Ensure blank answers are properly compared
+    }
+
+    if (selectedOption.trim() === correctAnswer.trim()) {
+        score++;
+    }
+
+    if (currentQuestionIndex + 1 >= questions.length) {
+        endQuiz();
+        return;
+    }
+
+    currentQuestionIndex++;
+    showQuestion();
+}
+
+function endQuiz() {
+    document.getElementById('quiz-container').innerHTML = `
+        <h3>🎉 Quiz Completed!</h3>
+        <p>Your Score: <strong>${score} / ${questions.length}</strong></p>
+        <button id="submit-score-btn" onclick="submitScore()">Submit Score</button>
+    `;
+}
+
+async function submitScore() {
+    try {
+        const response = await fetch('http://localhost:5000/submit-score', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                student_name: studentName,
+                roll_no: rollNo,
+                score: score,
+                total_questions: questions.length,
+                topic: "General Knowledge",
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.message) {
+            alert("✅ Score submitted successfully!");
+        } else {
+            alert("❌ Error: " + result.error);
+        }
+    } catch (error) {
+        console.error("🔥 Error submitting score:", error.message);
+    }
+}
+
+function startQuiz() {
+    document.getElementById('name-entry').style.display = "none";
+    document.getElementById('quiz-container').style.display = "block";
+    fetchQuestions();
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
+    const studentName = localStorage.getItem("student_name");
+    const rollNo = localStorage.getItem("roll_no");
+
+    if (!studentName || !rollNo) {
+        console.error("🚨 Missing student details!");
+        return;
+    }
+
+    try {
+        const response = await fetch("http://localhost:5000/has-attempted-quiz", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ student_name: studentName, roll_no: rollNo })
+        });
+
+        const result = await response.json();
+        const startButton = document.getElementById("start-quiz");
+        const quizMessage = document.getElementById("quizMessage");
+
+        if (result.attempted) {
+            startButton.disabled = true;
+            startButton.style.backgroundColor = "#aaa";
+            startButton.innerText = "Quiz Already Attempted";
+            quizMessage.innerText = "⚠️ You have already attempted the quiz.";
+            quizMessage.style.color = "red";
+        } else {
+            startButton.disabled = false;
+            startButton.innerText = "Start Quiz";
+            quizMessage.innerText = "You can start the quiz!";
+            quizMessage.style.color = "green";
+        }
+    } catch (error) {
+        console.error("🔥 Error checking quiz attempt:", error);
+    }
+});
+
+    </script>
+    
+</body>
+</html>

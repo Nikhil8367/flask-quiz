@@ -3,169 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login / Signup</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            color: white;
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 30px;
-            border-radius: 15px;
-            width: 350px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(10px);
-            text-align: center;
-            animation: fadeIn 1s ease-in-out;
-        }
-
-        h2 {
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-
-        input {
-            width: 90%;
-            padding: 12px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            outline: none;
-            transition: 0.3s ease-in-out;
-            text-align: center;
-            font-size: 1rem;
-        }
-
-        input::placeholder {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        input:focus {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
-        }
-
-        .btn-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        button {
-            padding: 12px;
-            font-size: 1rem;
-            background: linear-gradient(45deg, #ff416c, #ff4b2b);
-            border: none;
-            border-radius: 25px;
-            color: white;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s ease-in-out;
-            width: 100%;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
-        }
-
-        #name-field, #signup-btn {
-            display: none;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    <title>Login</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h2>Login / Signup</h2>
-        <input type="text" id="name-field" placeholder="Enter your name">
+        <h2>Login</h2>
         <input type="email" id="email" placeholder="Enter your GVPCE email">
         <input type="password" id="password" placeholder="Enter your password">
-        
-        <div class="btn-container">
-            <button onclick="login()">Login</button>
-            <button onclick="showSignup()">Signup</button>
-            <button id="signup-btn" onclick="signup()">Submit Signup</button>
-        </div>
+        <button onclick="login()">Login</button>
+        <p>Don't have an account? <a href="signup.html">Sign up here</a></p>
     </div>
 
     <script>
-        function showSignup() {
-            document.getElementById("name-field").style.display = "block"; 
-            document.getElementById("signup-btn").style.display = "block"; 
-        }
-
         async function login() {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-
-    if (!email.endsWith("@gvpce.ac.in")) {
-        alert("⚠️ Email must end with @gvpce.ac.in");
-        return;
-    }
-
-    if (!email || !password) {
-        alert("⚠️ Please enter email and password!");
-        return;
-    }
-
-    try {
-        const response = await fetch('http://localhost:5000/login', {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
-        });
-
-        const data = await response.json();
-
-        if (response.status === 200) {
-            alert(`✅ Welcome back, ${data.username}!`);
-
-            // 🛑 Clear old session data before storing new details
-            localStorage.clear();
-
-            // 🟢 Store new user session
-            localStorage.setItem("student_name", data.username);
-            localStorage.setItem("roll_no", data.roll_no);
-
-            // Redirect based on role
-            window.location.href = data.redirect;
-        } else {
-            alert(`❌ ${data.error}`);
-        }
-    } catch (error) {
-        console.error("Error:", error);
-        alert("❌ Failed to connect to the server.");
-    }
-}
-
-        async function signup() {
-            const name = document.getElementById("name-field").value.trim();
             const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value.trim();
 
@@ -174,24 +25,34 @@
                 return;
             }
 
-            if (!name || !email || !password) {
-                alert("⚠️ Please enter name, email, and password!");
+            if (!email || !password) {
+                alert("⚠️ Please enter email and password!");
                 return;
             }
 
             try {
-                const response = await fetch('http://localhost:5000/signup', {
+                const response = await fetch('http://localhost:5000/login', {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username: name, email, password })
+                    body: JSON.stringify({ email, password })
                 });
 
                 const data = await response.json();
 
-                if (response.status === 201) {
-                    alert("🎉 Signup successful! Now you can log in.");
-                    document.getElementById("name-field").style.display = "none"; 
-                    document.getElementById("signup-btn").style.display = "none"; 
+                if (response.status === 200) {
+                    alert(`✅ Welcome back, ${data.username}!`);
+
+                    // 🛑 Clear old session data
+                    localStorage.clear();
+
+                    // 🟢 Store new user session
+                    localStorage.setItem("student_name", data.username);
+                    localStorage.setItem("roll_no", data.roll_no);
+                    localStorage.setItem("email", data.email);
+                    localStorage.setItem("course", data.course);
+
+                    // Redirect to main.html
+                    window.location.href = "main.html";
                 } else {
                     alert(`❌ ${data.error}`);
                 }

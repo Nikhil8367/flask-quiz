@@ -1,23 +1,31 @@
 import json
 import re
 import os
+import base64
+import uuid
+import bcrypt
 import requests
 import traceback
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, render_template, url_for
 from flask_cors import CORS
+from flask_pymongo import PyMongo
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from bson import ObjectId
 from flask_cors import cross_origin
-
+from werkzeug.security import generate_password_hash, check_password_hash
+from bson import Binary
 # Load environment variables
 load_dotenv(override=True)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 MONGO_URI = os.getenv("MONGO_URI")
-
+# Flask App Setup
 # Flask App Setup
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")  # Change to a strong random key
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
 
 # Check if environment variables are set
 if not GEMINI_API_KEY or not MONGO_URI:
@@ -63,54 +71,49 @@ def ensure_admin_exists():
 # Ensure admin user is in the database
 ensure_admin_exists()
 
-@app.route("/")
-def home():
-    return "Flask app is running successfully!"
-
 # 🔹 SIGNUP Route
+import bcrypt
+from flask import request, jsonify
+
 @app.route('/signup', methods=['POST'])
 def signup():
     try:
         data = request.json
-        print("📩 Received signup request:", data)  # Debugging log
-
         email = data.get("email")
         password = data.get("password")
-        username = data.get("username")  # Ensure username is received
+        username = data.get("name")
+        roll_no = data.get("roll_no")
 
-        if not email or not password or not username:
-            print("❌ Missing required fields!")  # Debugging log
-            return jsonify({"error": "Email, password, and username are required!"}), 400
+        if not email or not password or not username or not roll_no:
+            return jsonify({"error": "All fields are required!"}), 400
 
-        details = extract_details(email)
-        if not details:
-            print("🚫 Invalid email format!")  # Debugging log
-            return jsonify({"error": "Invalid email format. Use @gvpce.ac.in"}), 400
+        # 🔎 Ensure `users_collection` is properly defined
+        users_collection = db["users"]
 
-        roll_no = details["roll_no"]
-        role = details["role"]
-
-        existing_user = users_collection.find_one({"email": email})
+        # 🔎 Check if user already exists (by email or roll_no)
+        existing_user = users_collection.find_one({"$or": [{"email": email}, {"roll_no": roll_no}]})
         if existing_user:
-            print("⚠️ User already exists!")  # Debugging log
             return jsonify({"error": "User already exists! Please log in."}), 409
 
+        # ✅ Hash the password before storing
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+        # ✅ Store user with hashed password
         new_user = {
             "email": email,
-            "password": password,  # Consider hashing for security
-            "username": username,  # Store username in DB
+            "password": hashed_password.decode('utf-8'),  # Store as string
+            "username": username,
             "roll_no": roll_no,
-            "role": role
+            "role": "student"
         }
-        
-        result = users_collection.insert_one(new_user)
-        print("✅ User created successfully!", result.inserted_id)  # Debugging log
 
-        return jsonify({"message": "Signup successful!", "email": email, "username": username}), 201
+        users_collection.insert_one(new_user)
+        return jsonify({"message": "Signup successful!"}), 201
 
     except Exception as e:
-        print("🔥 ERROR during signup:", str(e))  # Debugging log
-        return jsonify({"error": str(e)}), 500
+        print("🔥 ERROR during signup:", str(e))
+        return jsonify({"error": "Internal Server Error"}), 500
+
 
 @app.route('/get-user-info', methods=['GET'])
 def get_user_info():
@@ -137,53 +140,74 @@ def login():
         if not user:
             return jsonify({"error": "User not found! Please sign up first."}), 404
 
-        if user["password"] != password:
+        # ✅ Check password using bcrypt
+        if not bcrypt.checkpw(password.encode('utf-8'), user["password"].encode('utf-8')):
             return jsonify({"error": "Incorrect password!"}), 401
 
-        # Check if the user is admin
+        # ✅ Admin check
         if email == "admin@gvpce.ac.in":
             return jsonify({
                 "message": "Admin Login successful!",
-                "redirect": "help.html",
+                "redirect": "main.html",
                 "email": email,
                 "username": user["username"]
             }), 200
 
-        # Regular student login
+        # ✅ Student login
         return jsonify({
             "message": "Login successful!",
-            "redirect": "student.html",
+            "redirect": "main.html",
             "email": email,
             "username": user["username"],
-            "roll_no": user.get("roll_no", "")  # Avoid error if roll_no is missing
+            "roll_no": user.get("roll_no", "")
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print("🔥 ERROR during login:", str(e))
+        return jsonify({"error": "Internal Server Error"}), 500
 
-# 🔹 GET USERS Route
+    
 @app.route('/get-users', methods=['GET'])
 def get_users():
     try:
-        users = list(users_collection.find({}, {"_id": 0, "password": 0}))  # Hide passwords
-        return jsonify({"users": users})
+        users_collection = db["users"]  # Ensure correct collection reference
+        
+        # Fetch users and exclude `_id` field
+        users = list(users_collection.find({}, {"_id": 0, "password": 0}))  # Exclude passwords for security
+
+        if not users:
+            return jsonify({"message": "No users found"}), 404
+
+        return jsonify({"users": users}), 200
+
     except Exception as e:
         print("🔥 ERROR fetching users:", str(e))
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal Server Error"}), 500
+
     
 @app.route('/reset-users', methods=['POST'])
 def reset_users():
-    """Deletes all users from the database."""
+    """Deletes all users except the admin from the database."""
     try:
-        deleted_count = users_collection.delete_many({}).deleted_count
-        print(f"✅ Deleted {deleted_count} users from the database.")
+        # Delete all users except the admin
+        deleted_count = users_collection.delete_many({"email": {"$ne": "admin@gvpce.ac.in"}}).deleted_count
+        print(f"✅ Deleted {deleted_count} non-admin users from the database.")
 
-        return jsonify({"message": f"Deleted {deleted_count} users successfully!"}), 200
+        return jsonify({"message": f"Deleted {deleted_count} users successfully, Admin remains!"}), 200
 
     except Exception as e:
         print("🔥 ERROR:", str(e))
         return jsonify({"error": str(e)}), 500
 
+@app.route('/view_question/<question_id>')
+def view_question(question_id):
+    question = collection.find_one({"_id": ObjectId(question_id)})  
+    return render_template("question.html", question=question)
+
+@app.route('/create_question', methods=['POST'])
+def create_question():
+    data = request.json
+    return jsonify({"message": "Question added!", "data": data})
 @app.route('/generate-quiz', methods=['POST'])
 def generate_quiz():
     """Reset quiz and generate new questions using Gemini API, storing them in MongoDB."""
@@ -198,12 +222,15 @@ def generate_quiz():
 
         print(f"📝 Generating {num_questions} questions on '{topic}' at {difficulty} difficulty...")
 
-        # Define AI prompt
+        # **Fixed AI Prompt**
         prompt = (
             f"Generate {num_questions} multiple-choice questions on {topic} at {difficulty} difficulty. "
-            "Each question must include: 'question', 'options' (4 choices), and 'correct_answer'. "
+            "Each question must include:\n"
+            "- 'question': The full question text.\n"
+            "- 'options': A list of 4 answer choices as full text.\n"
+            "- 'correct_answer': The full text of the correct answer (not just 'A', 'B', etc.).\n"
             "Return a JSON array in this format:\n"
-            "[{'question': '...', 'options': ['A', 'B', 'C', 'D'], 'correct_answer': '...'}]"
+            "[{'question': '...', 'options': ['Option 1', 'Option 2', 'Option 3', 'Option 4'], 'correct_answer': 'Option X'}]"
         )
 
         # Send request to Gemini API
@@ -237,6 +264,17 @@ def generate_quiz():
                 if not isinstance(q["options"], list) or len(q["options"]) != 4:
                     return jsonify({"error": "Invalid options format from AI"}), 500
 
+                # **Ensure correct_answer contains full text, not just "A", "B", etc.**
+                correct_answer = q["correct_answer"].strip()
+                options = [opt.strip() for opt in q["options"]]
+
+                if correct_answer in ["A", "B", "C", "D"]:
+                    correct_index = ord(correct_answer) - ord("A")  # Convert "A" -> 0, "B" -> 1, etc.
+                    if 0 <= correct_index < len(options):
+                        q["correct_answer"] = options[correct_index]  # Replace with full answer text
+                    else:
+                        return jsonify({"error": f"Invalid correct answer index for question: {q}"}), 500
+
             # 🚀 Reset quiz before inserting new questions
             collection.delete_many({})
             print("🔄 Quiz reset! Previous questions deleted.")
@@ -260,20 +298,48 @@ def generate_quiz():
         print(traceback.format_exc())  # Debugging
         return jsonify({"error": str(e)}), 500
 
+
+from flask import send_from_directory
+
+UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")  # Ensure absolute path
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """Serve uploaded images."""
+    print(f"📤 Serving file: {filename}")
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
 @app.route('/get-questions', methods=['GET'])
 def get_questions():
-    """Retrieve stored questions."""
+    """Retrieve stored questions along with their base64 image URLs if applicable."""
     try:
-        questions = list(collection.find({}, {"_id": 0}))
+        questions = list(collection.find({}, {"_id": 0}))  # Fetch all questions
 
-        return jsonify({
-            "questions": questions,
-            "total_questions": len(questions)
-        })
+        for question in questions:
+            # ✅ Convert question image to Base64 if it exists
+            if "image" in question and isinstance(question["image"], Binary):
+                question["image"] = f"data:image/png;base64,{base64.b64encode(question['image']).decode('utf-8')}"
+
+            # ✅ Process option images
+            if "option_images" in question and isinstance(question["option_images"], dict):
+                for key, img in question["option_images"].items():
+                    if isinstance(img, Binary):  
+                        question["option_images"][key] = f"data:image/png;base64,{base64.b64encode(img).decode('utf-8')}"
+                    elif isinstance(img, str) and img.startswith("data:image"):  
+                        question["option_images"][key] = img  # Already Base64, keep as is
+                    else:
+                        question["option_images"][key] = None  # No image found
+
+        # 🔍 Debugging: Print the JSON before returning
+        print("✅ Processed Questions Data:", questions)
+
+        return jsonify({"questions": questions, "total_questions": len(questions)})
 
     except Exception as e:
         print("🔥 ERROR:", str(e))
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal Server Error"}), 500
+
 
 @app.route('/reset-quiz', methods=['POST'])
 def reset_quiz():
@@ -324,32 +390,36 @@ def submit_all_changes():
     except Exception as e:
         print("🔥 ERROR:", str(e))
         return jsonify({"error": str(e)}), 500
-    
+
+from bson import ObjectId
+
 @app.route('/submit-score', methods=['POST'])
 def submit_score():
     try:
         data = request.json
         print("📩 Received score submission:", data)  # Debug log
 
+        # Extract data fields
         student_name = data.get("student_name")
         roll_no = data.get("roll_no")
         score = data.get("score")
         total_questions = data.get("total_questions")
+        topic = data.get("topic")  # Add topic to track quiz attempts
+        timestamp = data.get("timestamp")
 
-        if not student_name or not roll_no or score is None or total_questions is None:
+        # ✅ Check for missing fields
+        if not all([student_name, roll_no, score is not None, total_questions is not None, topic, timestamp]):
             print("❌ Missing score data!")  # Debug log
-            return jsonify({"error": "Invalid score data"}), 400
+            return jsonify({"error": "Invalid score data. All fields are required!"}), 400
 
         scores_collection = db["scores"]
 
-        # ❌ STRICT CHECK: If the roll number or name already exists, reject submission
-        existing_student = scores_collection.find_one({
-            "$or": [{"student_name": student_name}, {"roll_no": roll_no}]
-        })
+        # 🔎 STRICT CHECK: If the roll number already exists for the same topic, reject submission
+        existing_attempt = scores_collection.find_one({"roll_no": roll_no, "topic": topic})
 
-        if existing_student:
-            print("🚫 This student has already taken the quiz!")  # Debug log
-            return jsonify({"error": "You have already taken the quiz!"}), 403
+        if existing_attempt:
+            print("🚫 This roll number has already attempted the quiz for this topic!")  # Debug log
+            return jsonify({"error": "You have already attempted this quiz!"}), 403
 
         # ✅ Store new score
         new_score = {
@@ -357,31 +427,111 @@ def submit_score():
             "roll_no": roll_no,
             "score": score,
             "total_questions": total_questions,
-            "timestamp": data.get("timestamp")  # Add timestamp for tracking
+            "topic": topic,  # Save topic for future checks
+            "timestamp": timestamp  # Store timestamp
         }
 
-        scores_collection.insert_one(new_score)  # Insert into DB
-        print("✅ Score stored in MongoDB!")  # Debug log
+        result = scores_collection.insert_one(new_score)  # Insert into DB
 
+        # ✅ Convert ObjectId to string before returning response
+        new_score["_id"] = str(result.inserted_id)
+
+        print("✅ Score stored in MongoDB!")  # Debug log
         return jsonify({"message": "Score submitted successfully!", "data": new_score}), 201
 
     except Exception as e:
         print("🔥 ERROR submitting score:", str(e))
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal Server Error"}), 500
+
+
+@app.route('/store-questions', methods=['POST'])
+def store_questions():
+    data = request.json
+    questions = data.get("questions", [])
+
+    processed_questions = []
+    
+    for question in questions:
+        question["image"] = process_image(question.get("image", ""), "question")
+
+        # ✅ Process option images
+        if "option_images" in question and isinstance(question["option_images"], dict):
+            processed_option_images = {}
+            for key, img in question["option_images"].items():
+                processed_option_images[key] = process_image(img, f"option-{key}")
+            question["option_images"] = processed_option_images
+
+        question["answer_image"] = process_image(question.get("answer_image", ""), "answer")
+
+        processed_questions.append(question)
+
+    if processed_questions:
+        collection.insert_many(processed_questions)
+
+    return jsonify({"message": "Questions stored successfully"}), 200
+
+UPLOAD_FOLDER = "uploads"
+
+def save_base64_image(data, prefix):
+    """Save a base64 image and return the base64 string to store in MongoDB."""
+    try:
+        if "," not in data:
+            print("❌ Invalid base64 format!")
+            return None
+
+        # Extract the base64 data (remove metadata)
+        image_data = data.split(",")[1]
+
+        # Validate base64 format
+        try:
+            image_bytes = base64.b64decode(image_data)
+        except Exception as e:
+            print("🔥 ERROR decoding Base64:", str(e))
+            return None
+
+        # Convert image bytes back to a Base64 string (to be stored in MongoDB)
+        encoded_string = base64.b64encode(image_bytes).decode("utf-8")
+        return f"data:image/png;base64,{encoded_string}"
+
+    except Exception as e:
+        print("🔥 ERROR saving image:", str(e))
+        return None
+@app.route('/test-save-image', methods=['POST'])
+def test_save_image():
+    """Test saving a base64 image."""
+    data = request.json
+    base64_image = data.get("image")
+    if not base64_image:
+        return jsonify({"error": "No image data received"}), 400
+
+    saved_url = save_base64_image(base64_image, "test")
+    if saved_url:
+        return jsonify({"message": "Image saved successfully!", "url": saved_url}), 200
+    else:
+        return jsonify({"error": "Failed to save image"}), 500
+
+# Function to process base64 images and store in MongoDB
+def process_image(image, prefix):
+    """Convert base64 image to a storable Base64 string or return the original value if it's a URL."""
+    if not image:
+        return None
+
+    if image.startswith("data:image"):  # If Base64 image
+        return save_base64_image(image, prefix)
+    
+    return image  # Assume it's an existing URL
+
 @app.route('/has-attempted-quiz', methods=['POST'])
 def has_attempted_quiz():
     try:
         data = request.json
-        student_name = data.get("student_name")
-        roll_no = data.get("roll_no")
+        roll_no = data.get("roll_no")  # ✅ Use roll number instead of student name
 
-        if not student_name or not roll_no:
-            return jsonify({"error": "Invalid student details"}), 400
+        if not roll_no:
+            return jsonify({"error": "Invalid request! Roll number is required."}), 400
 
-        # 🔎 Check if student has already taken the quiz
-        existing_attempt = db["scores"].find_one({
-            "$or": [{"student_name": student_name}, {"roll_no": roll_no}]
-        })
+        # 🔎 Check if this roll number has already taken the quiz
+        existing_attempt = db["scores"].find_one({"roll_no": roll_no})
 
         if existing_attempt:
             return jsonify({"attempted": True})  # ✅ Student has already attempted
@@ -414,7 +564,7 @@ def get_scores():
     except Exception as e:
         print("🔥 ERROR fetching scores:", str(e))
         return jsonify({"error": str(e)}), 500
-
+session
 @app.route('/check-student', methods=['POST'])
 def check_student():
     data = request.json
@@ -431,9 +581,5 @@ def check_student():
 
     return jsonify({"message": "Valid entry"}), 200  # ✅ OK
 
-import os
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Default to 5000 if PORT is not set
-    app.run(host="0.0.0.0", port=port)
-
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
